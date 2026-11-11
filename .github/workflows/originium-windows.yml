@@ -1,0 +1,85 @@
+name: Build Originium MAA for Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    name: Build Windows x64 package
+    runs-on: windows-2025-vs2026
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          show-progress: false
+
+      - name: Fetch required submodules
+        shell: bash
+        run: bash ./.github/scripts/sync-optional-submodules.sh --init --depth 1 src/MaaUtils 3rdparty/EmulatorExtras
+
+      - name: Cache MaaDeps
+        id: cache-maadeps
+        uses: actions/cache@v6
+        continue-on-error: true
+        with:
+          path: src/MaaUtils/MaaDeps
+          key: ${{ runner.os }}-x64-maadeps-${{ hashFiles('tools/maadeps-download.py') }}
+
+      - name: Bootstrap MaaDeps
+        if: steps.cache-maadeps.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/maadeps-download.py x64-windows
+
+      - name: Build and install MaaCore
+        run: |
+          cmake -B build --preset windows-publish-x64 -DMAA_HASH_VERSION='v6.22.0-originium'
+          cmake --build --preset windows-publish-x64 --parallel $env:NUMBER_OF_PROCESSORS
+          cmake --build build --target MAA.Updater --config RelWithDebInfo --parallel $env:NUMBER_OF_PROCESSORS
+          cmake --install build --config RelWithDebInfo
+
+      - name: Download MaaFramework control units
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: MaaXYZ/MaaFramework
+          tag: v5.13.0
+          fileName: '*win-x86_64*.zip'
+          extract: true
+          out-file-path: MaaFramework-temp
+
+      - name: Copy MaaFramework control units
+        shell: bash
+        run: |
+          cp MaaFramework-temp/bin/*Win32ControlUnit* install/
+          cp MaaFramework-temp/bin/*AdbControlUnit* install/
+
+      - name: Select .NET SDK
+        shell: bash
+        run: echo '{"sdk":{"version":"10.0.302","rollForward":"disable"}}' > global.json
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore WPF dependencies
+        run: dotnet restore src/MaaWpfGui/MaaWpfGui.csproj
+
+      - name: Publish WPF GUI
+        run: dotnet publish src/MaaWpfGui/MaaWpfGui.csproj -c Release -p:Platform=x64 -o install
+
+      - name: Remove development-only files
+        shell: bash
+        run: |
+          rm -rf install/*.pdb install/msvc-debug install/*.h
+
+      - name: Upload complete MAA package
+        uses: actions/upload-artifact@v7
+        with:
+          name: MAA-v6.22.0-originium-win-x64
+          path: install/
+          compression-level: 6
