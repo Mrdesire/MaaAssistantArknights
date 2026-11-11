@@ -66,6 +66,18 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Set custom GUI version
+        shell: pwsh
+        run: |
+          $csprojPath = Resolve-Path "src/MaaWpfGui/MaaWpfGui.csproj"
+          [xml]$csproj = Get-Content -Path $csprojPath
+          $node = $csproj.Project.PropertyGroup | Where-Object { $_.ApplicationVersion -ne $null }
+          $node.InformationalVersion = "v6.22.0-originium"
+          $node.Version = "6.22.0"
+          $node.FileVersion = "6.22.0"
+          $node.AssemblyVersion = "6.22.0"
+          $csproj.Save($csprojPath)
+
       - name: Restore WPF dependencies
         run: dotnet restore src/MaaWpfGui/MaaWpfGui.csproj
 
