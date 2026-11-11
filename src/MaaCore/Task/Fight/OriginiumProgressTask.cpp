@@ -65,12 +65,17 @@ bool asst::OriginiumProgressTask::_run()
 {
     LogTraceFunction;
 
+    m_resource_exhausted = false;
+
     const auto stages = build_stage_list();
     const auto start = std::ranges::find(stages, m_start_stage, &StageEntry::code);
     if (start == stages.end()) {
         LogError << __FUNCTION__ << "start stage is not a supported main-story stage" << m_start_stage;
         return false;
     }
+
+    LogInfo << "Originium progression started from" << m_start_stage << "through chapter" << m_last_chapter
+            << "include raid:" << m_include_raid << "normal stage limit:" << m_max_normal_stages;
 
     int normal_fought = 0;
     for (auto iter = start; iter != stages.end() && !need_exit(); ++iter) {
@@ -85,12 +90,20 @@ bool asst::OriginiumProgressTask::_run()
         if (!run_stage(*iter, Difficulty::Normal, fought)) {
             return false;
         }
+        if (m_resource_exhausted) {
+            LogInfo << "Originium progression stopped: sanity recovery budget exhausted at" << iter->code;
+            break;
+        }
         normal_fought += fought ? 1 : 0;
 
         if (m_include_raid && !iter->hard_only && !iter->story_only) {
             bool raid_fought = false;
             if (!run_stage(*iter, Difficulty::Raid, raid_fought)) {
                 return false;
+            }
+            if (m_resource_exhausted) {
+                LogInfo << "Originium progression stopped: sanity recovery budget exhausted at raid" << iter->code;
+                break;
             }
         }
     }
@@ -159,6 +172,21 @@ std::vector<asst::OriginiumProgressTask::StageEntry> asst::OriginiumProgressTask
         }
     }
 
+    // Episode 8 uses R8/M8/JT8 battle codes rather than numeric codes, so it
+    // cannot participate in the numeric-gap inference above. END8-1 is the
+    // story node that closes the episode and unlocks the following episode.
+    if (m_last_chapter >= 8 && seen.emplace("END8-1").second) {
+        stages.emplace_back(
+            StageEntry {
+                .code = "END8-1",
+                .order_key = "main_08-99",
+                .chapter = 8,
+                .category = 0,
+                .hard_only = false,
+                .story_only = true,
+            });
+    }
+
     static constexpr std::array HardStageCounts = {
         std::pair { 5, 4 },  std::pair { 6, 4 },  std::pair { 7, 4 },  std::pair { 8, 4 },  std::pair { 9, 6 },
         std::pair { 10, 3 }, std::pair { 11, 4 }, std::pair { 12, 4 }, std::pair { 13, 4 }, std::pair { 14, 4 },
@@ -191,11 +219,15 @@ std::vector<asst::OriginiumProgressTask::StageEntry> asst::OriginiumProgressTask
 bool asst::OriginiumProgressTask::run_stage(const StageEntry& stage, Difficulty difficulty, bool& fought)
 {
     fought = false;
+    LogInfo << "Originium checking stage" << stage.code
+            << "difficulty:" << (difficulty == Difficulty::Raid ? "raid" : "normal")
+            << "story only:" << stage.story_only;
     if (!navigate(stage, difficulty)) {
-        if (difficulty == Difficulty::Raid) {
-            report("OriginiumRaidUnavailable", stage, difficulty);
+        if (difficulty == Difficulty::Raid || stage.story_only) {
+            report(stage.story_only ? "OriginiumStoryUnavailable" : "OriginiumRaidUnavailable", stage, difficulty);
             return true;
         }
+        LogError << __FUNCTION__ << "failed to navigate to required normal stage" << stage.code;
         return false;
     }
 
@@ -205,13 +237,27 @@ bool asst::OriginiumProgressTask::run_stage(const StageEntry& stage, Difficulty 
         return true;
     }
 
+    if (stage.story_only && !has_start_story_button()) {
+        report("OriginiumStoryAlreadyCompleted", stage, difficulty);
+        return close_stage_detail();
+    }
+
     if (!stage.story_only && !has_unclaimed_originium()) {
         report("OriginiumRewardAlreadyClaimed", stage, difficulty);
         return close_stage_detail();
     }
 
     report("OriginiumStageStart", stage, difficulty);
-    if (!start_and_wait_for_map()) {
+    const auto outcome = start_and_wait_for_map();
+    if (outcome == StartOutcome::ResourceExhausted) {
+        m_resource_exhausted = true;
+        report("OriginiumSanityRecoveryExhausted", stage, difficulty);
+        if (!close_stage_detail()) {
+            LogWarn << __FUNCTION__ << "could not close stage detail after sanity recovery budget was exhausted";
+        }
+        return true;
+    }
+    if (outcome == StartOutcome::Failed) {
         LogError << __FUNCTION__ << "failed to start or settle stage" << stage.code;
         return false;
     }
@@ -224,8 +270,8 @@ bool asst::OriginiumProgressTask::run_stage(const StageEntry& stage, Difficulty 
 bool asst::OriginiumProgressTask::navigate(const StageEntry& stage, Difficulty difficulty)
 {
     std::string navigation_code = stage.code;
-    if (!stage.hard_only && stage.chapter >= 10) {
-        navigation_code += difficulty == Difficulty::Raid ? "-Hard" : "-Normal";
+    if (stage.chapter >= 10) {
+        navigation_code += stage.hard_only || difficulty == Difficulty::Raid ? "-Hard" : "-Normal";
     }
 
     StageNavigationTask navigation(m_callback, m_inst, m_task_chain);
@@ -268,17 +314,30 @@ bool asst::OriginiumProgressTask::has_unclaimed_originium() const
     return reward && !claimed;
 }
 
-bool asst::OriginiumProgressTask::start_and_wait_for_map()
+bool asst::OriginiumProgressTask::has_start_story_button() const
+{
+    OCRer analyzer(ctrler()->get_image());
+    const auto results = analyzer.analyze();
+    return results && std::ranges::any_of(*results, [](const auto& result) {
+               return result.text.find("开始剧情") != std::string::npos;
+           });
+}
+
+asst::OriginiumProgressTask::StartOutcome asst::OriginiumProgressTask::start_and_wait_for_map()
 {
     m_start_task_ptr->set_task_id(m_task_id);
     if (!m_start_task_ptr->run()) {
-        return false;
+        LogError << __FUNCTION__ << "start button process failed; last task:" << m_start_task_ptr->get_last_task_name();
+        return StartOutcome::Failed;
     }
     const auto& last_task = m_start_task_ptr->get_last_task_name();
-    if (!last_task.ends_with("OriginiumStartButton2") && !last_task.ends_with("OriginiumStartStory")) {
-        return false;
+    if (last_task.ends_with("OriginiumCloseStonePage") || last_task.ends_with("OriginiumNoStone")) {
+        return StartOutcome::ResourceExhausted;
     }
-    const bool story_started = last_task.ends_with("OriginiumStartStory");
+    if (!last_task.ends_with("OriginiumStartButton2") && !last_task.ends_with("OriginiumStartStory")) {
+        LogError << __FUNCTION__ << "start process ended at unexpected task:" << last_task;
+        return StartOutcome::Failed;
+    }
 
     constexpr int MinWaitMs = 3000;
     constexpr int PollMs = 1000;
@@ -289,54 +348,62 @@ bool asst::OriginiumProgressTask::start_and_wait_for_map()
     bool story_skip_requested = false;
     for (int elapsed = MinWaitMs; elapsed < TimeoutMs && !need_exit(); elapsed += PollMs) {
         const auto image = ctrler()->get_image();
-        if (story_started) {
-            OCRer story_ocr(image);
-            if (const auto results = story_ocr.analyze()) {
-                const auto skip = std::ranges::find_if(*results, [](const auto& result) {
-                    return result.text.find("跳过") != std::string::npos ||
-                           result.text.find("略过") != std::string::npos;
+        bool stage_detail_open = false;
+        OCRer story_ocr(image);
+        if (const auto results = story_ocr.analyze()) {
+            stage_detail_open = std::ranges::any_of(*results, [](const auto& result) {
+                return result.text.find("开始行动") != std::string::npos ||
+                       result.text.find("开始作战") != std::string::npos ||
+                       result.text.find("开始推演") != std::string::npos ||
+                       result.text.find("开始剧情") != std::string::npos;
+            });
+            const auto skip = std::ranges::find_if(*results, [](const auto& result) {
+                return result.text.find("跳过") != std::string::npos || result.text.find("略过") != std::string::npos;
+            });
+            if (!story_skip_requested && skip != results->end()) {
+                ctrler()->click(skip->rect);
+                story_skip_requested = true;
+                stable_frames = 0;
+                sleep(PollMs);
+                continue;
+            }
+            if (story_skip_requested) {
+                const auto confirm = std::ranges::find_if(*results, [](const auto& result) {
+                    const auto center_x = result.rect.x + result.rect.width / 2;
+                    return center_x > 640 && (result.text.find("确认") != std::string::npos ||
+                                              result.text.find("确定") != std::string::npos);
                 });
-                if (!story_skip_requested && skip != results->end()) {
-                    ctrler()->click(skip->rect);
+                if (confirm != results->end()) {
+                    ctrler()->click(confirm->rect);
                     story_skip_requested = true;
                     stable_frames = 0;
                     sleep(PollMs);
                     continue;
                 }
-                if (story_skip_requested) {
-                    const auto confirm = std::ranges::find_if(*results, [](const auto& result) {
-                        const auto center_x = result.rect.x + result.rect.width / 2;
-                        return center_x > 640 && (result.text.find("确认") != std::string::npos ||
-                                                  result.text.find("确定") != std::string::npos);
-                    });
-                    if (confirm != results->end()) {
-                        ctrler()->click(confirm->rect);
-                        stable_frames = 0;
-                        sleep(PollMs);
-                        continue;
-                    }
-                }
             }
         }
 
-        if (is_stage_map(image)) {
+        if (!stage_detail_open && is_stage_map(image)) {
             ++stable_frames;
             if (stable_frames >= 2) {
-                return true;
+                return StartOutcome::Started;
             }
         }
         else {
             stable_frames = 0;
         }
+        if (elapsed % 10'000 == 0) {
+            LogInfo << "Originium waiting for automatic settlement; elapsed ms:" << elapsed;
+        }
         sleep(PollMs);
     }
-    return false;
+    LogError << __FUNCTION__ << "automatic settlement did not return to the stage map within ms:" << TimeoutMs;
+    return StartOutcome::Failed;
 }
 
 bool asst::OriginiumProgressTask::is_stage_map(const cv::Mat& image) const
 {
     static const boost::regex StageRegex(R"(^[A-Za-z]{0,3}\d{1,2}-\d{1,2}$)");
-    static const Rect DetailStageCodeRoi { 800, 40, 400, 140 };
 
     OCRer analyzer(image);
     analyzer.set_task_info("OriginiumMapStageOcr");
@@ -346,11 +413,7 @@ bool asst::OriginiumProgressTask::is_stage_map(const cv::Mat& image) const
     }
 
     for (const auto& result : *results) {
-        if (!boost::regex_match(result.text, StageRegex)) {
-            continue;
-        }
-        const Point center(result.rect.x + result.rect.width / 2, result.rect.y + result.rect.height / 2);
-        if (!DetailStageCodeRoi.include(center)) {
+        if (boost::regex_match(result.text, StageRegex)) {
             return true;
         }
     }
@@ -359,9 +422,30 @@ bool asst::OriginiumProgressTask::is_stage_map(const cv::Mat& image) const
 
 bool asst::OriginiumProgressTask::close_stage_detail() const
 {
-    ProcessTask task(*this, { "Return" });
-    task.set_retry_times(3);
-    return task.run();
+    // A failed raid switch may leave a modal over the stage detail. The first
+    // return closes that modal and the second one closes the detail itself.
+    // Stop after one click in the usual case so we never back out of the map.
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        ProcessTask task(*this, { "Return" });
+        task.set_retry_times(3);
+        if (!task.run()) {
+            return false;
+        }
+
+        OCRer analyzer(ctrler()->get_image());
+        const auto results = analyzer.analyze();
+        const bool still_in_detail = results && std::ranges::any_of(*results, [](const auto& result) {
+                                         return result.text.find("开始行动") != std::string::npos ||
+                                                result.text.find("开始作战") != std::string::npos ||
+                                                result.text.find("开始推演") != std::string::npos ||
+                                                result.text.find("开始剧情") != std::string::npos;
+                                     });
+        if (!still_in_detail) {
+            return true;
+        }
+    }
+    LogError << __FUNCTION__ << "stage detail remained open after two return attempts";
+    return false;
 }
 
 void asst::OriginiumProgressTask::report(std::string what, const StageEntry& stage, Difficulty difficulty)

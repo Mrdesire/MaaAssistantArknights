@@ -109,7 +109,10 @@ bool asst::FightTask::set_params(const json::value& params)
                 originium_last_chapter)) {
             return false;
         }
-        m_start_up_task_ptr->set_enable(false);
+        // Keep MAA's normal pre-navigation so the custom progression task can
+        // start from the home screen instead of requiring the terminal to be open.
+        m_start_up_task_ptr->set_tasks({ "StageBegin" }).set_times_limit("GoLastBattle", 0);
+        m_start_up_task_ptr->set_enable(times != 0);
         m_stage_navigation_task_ptr->set_enable(false);
         m_fight_task_ptr->set_enable(false);
         m_sidestory_reopen_task_ptr->set_enable(false);

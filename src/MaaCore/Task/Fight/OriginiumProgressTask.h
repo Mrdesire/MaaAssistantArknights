@@ -46,12 +46,20 @@ private:
         Raid,
     };
 
+    enum class StartOutcome
+    {
+        Started,
+        ResourceExhausted,
+        Failed,
+    };
+
     std::vector<StageEntry> build_stage_list() const;
     bool run_stage(const StageEntry& stage, Difficulty difficulty, bool& fought);
     bool navigate(const StageEntry& stage, Difficulty difficulty);
     bool switch_to_raid() const;
     bool has_unclaimed_originium() const;
-    bool start_and_wait_for_map();
+    StartOutcome start_and_wait_for_map();
+    bool has_start_story_button() const;
     bool is_stage_map(const cv::Mat& image) const;
     bool close_stage_detail() const;
     void report(std::string what, const StageEntry& stage, Difficulty difficulty);
@@ -60,6 +68,7 @@ private:
     int m_max_normal_stages = 0;
     bool m_include_raid = true;
     int m_last_chapter = 17;
+    bool m_resource_exhausted = false;
 
     std::shared_ptr<ProcessTask> m_start_task_ptr;
     std::shared_ptr<MedicineCounterTaskPlugin> m_medicine_plugin_ptr;

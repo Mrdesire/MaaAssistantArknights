@@ -1189,7 +1189,7 @@
         "algorithm": "OcrDetect",
         "action": "ClickSelf",
         "text": ["开始剧情"],
-        "roi": [820, 180, 450, 460],
+        "roi": [820, 180, 460, 540],
         "postDelay": 1000,
         "next": []
     },
@@ -1226,10 +1226,10 @@
     "OriginiumCloseStonePage": {
         "baseTask": "CloseStonePage",
         "exceededNext": [],
-        "next": []
+        "next": ["OriginiumStartButton1"]
     },
     "OriginiumMapStageOcr": {
-        "doc": "自动结算后确认已回到关卡地图；排除详情页右上角的单个关卡代号由 C++ 完成",
+        "doc": "自动结算后确认已回到关卡地图；C++ 同时检查开始行动或开始剧情按钮以排除关卡详情页",
         "algorithm": "OcrDetect",
         "isAscii": true,
         "text": [],
