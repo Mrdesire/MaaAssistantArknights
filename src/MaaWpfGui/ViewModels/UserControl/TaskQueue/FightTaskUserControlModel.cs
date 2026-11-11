@@ -212,6 +212,20 @@ public partial class FightTaskUserControlModel : TaskSettingsViewModel, FightTas
     public static FightTaskUserControlModel Instance { get; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether 使用主线首通刷源石模式。
+    /// </summary>
+    public bool OriginiumMode
+    {
+        get => GetTaskConfig<FightTask>().OriginiumMode;
+        set {
+            if (SetTaskConfig<FightTask>(t => t.OriginiumMode == value, t => t.OriginiumMode = value))
+            {
+                SetFightParams();
+            }
+        }
+    }
+
+    /// <summary>
     /// Gets or sets a value indicating whether 关卡规划项正在被拖拽。
     /// </summary>
     public bool IsStageItemDragging { get => field; set => SetAndNotify(ref field, value); }
@@ -1353,6 +1367,9 @@ public partial class FightTaskUserControlModel : TaskSettingsViewModel, FightTas
 
         var task = new AsstFightTask() {
             Stage = stage,
+            OriginiumMode = fight.OriginiumMode,
+            OriginiumIncludeRaid = fight.OriginiumIncludeRaid,
+            OriginiumLastChapter = fight.OriginiumLastChapter,
             Medicine = fight.UseMedicine != false ? fight.MedicineCount : 0,
             Stone = fight.UseStone != false ? fight.StoneCount : 0,
             Series = fight.Series,

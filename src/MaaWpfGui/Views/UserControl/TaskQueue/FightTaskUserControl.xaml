@@ -23,6 +23,12 @@
         <converters:ItemImageConverter x:Key="ItemImageConverter" />
     </UserControl.Resources>
     <StackPanel>
+        <CheckBox
+            Margin="6"
+            VerticalContentAlignment="Center"
+            Content="{DynamicResource TaskQueue.Fight.OriginiumMode}"
+            IsChecked="{Binding OriginiumMode}"
+            ToolTip="{DynamicResource TaskQueue.Fight.OriginiumMode.Tip}" />
         <Grid d:Visibility="Visible" Visibility="{c:Binding !EnableAdvancedSettings, Source={x:Static ui_vms:TaskQueueViewModel.TaskSettingVisibilities}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

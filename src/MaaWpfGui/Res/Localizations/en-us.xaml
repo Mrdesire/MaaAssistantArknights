@@ -2120,6 +2120,8 @@ Enter ｢SSReopen-XX｣ once to clear all normal stages with Auto-Deploy in SS r
     <system:String x:Key="TaskQueue.Fight.InventoryUpdate.Tip">Inventory data can be updated via  ｢{key=Toolbox.Title}-{key=Depot.Title}｣</system:String>
     <system:String x:Key="TaskQueue.Fight.MedicineExpireDays.Tip">Only uses medicine displayed as less than "N days" in-game; anything displayed as "N days" or more will not be used.</system:String>
     <system:String x:Key="TaskQueue.Fight.NoActivity">No activity</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode">Main Story First Clears (No Auto-Deploy)</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode.Tip">Uses the selected stage as the starting point and advances through the main story and later episodes. Auto-Deploy is never enabled, and Normal, Challenge, or Adverse stages are attempted only when an unclaimed Originite Prime reward is positively recognized. Requires a modified client that settles battles automatically</system:String>
     <system:String x:Key="TaskQueue.Fight.PerformBattles">Perform Battles</system:String>
     <system:String x:Key="TaskQueue.Fight.PermanentStageBlocksStages">The selected stage ｢{0}｣ is a permanent stage or Current/Last; subsequent stages will not be selected</system:String>
     <system:String x:Key="TaskQueue.Fight.Quantity">Farm</system:String>

@@ -2122,6 +2122,8 @@ MAA は非インストール型のアプリケーションであり、レジス�
     <system:String x:Key="TaskQueue.Fight.InventoryUpdate.Tip">在庫データは ｢{key=Toolbox.Title}-{key=Depot.Title}｣ で更新できます</system:String>
     <system:String x:Key="TaskQueue.Fight.MedicineExpireDays.Tip">ゲーム内で ｢N日｣ 未満と表示される回復剤のみ使用し、｢N日｣ 以上は使用しません。</system:String>
     <system:String x:Key="TaskQueue.Fight.NoActivity">活動なし</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode">メイン初回クリア純正源石回収（自動指揮なし）</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode.Tip">選択したステージを開始地点としてメインストーリーと後続章を自動的に進めます。自動指揮は有効にせず、未回収の純正源石報酬を明確に認識した通常・強襲・厄難ステージのみ挑戦します。戦闘を自動決済する特殊クライアントが必要です</system:String>
     <system:String x:Key="TaskQueue.Fight.PerformBattles">周回数指定</system:String>
     <system:String x:Key="TaskQueue.Fight.PermanentStageBlocksStages">選択されたステージ ｢{0}｣ は常設ステージまたは現在/最後のため、後続のステージは選択されません</system:String>
     <system:String x:Key="TaskQueue.Fight.Quantity">ドロップ数</system:String>

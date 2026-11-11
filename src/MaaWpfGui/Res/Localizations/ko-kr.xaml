@@ -2121,6 +2121,8 @@ MAA는 비설치형 응용 프로그램으로, 삭제 시 레지스트리 항목
     <system:String x:Key="TaskQueue.Fight.InventoryUpdate.Tip">재고 데이터는  ｢{key=Toolbox.Title}-{key=Depot.Title}｣ 을 통해 업데이트 가능</system:String>
     <system:String x:Key="TaskQueue.Fight.MedicineExpireDays.Tip">게임 내에서 N일 미만으로 표시되는 이성 회복제만 사용하며, ｢N일｣ 이상은 사용하지 않습니다.</system:String>
     <system:String x:Key="TaskQueue.Fight.NoActivity">활동 없음</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode">메인 스토리 첫 클리어 순오리지늄 수집 (자동 전투 없음)</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode.Tip">선택한 스테이지를 시작 지점으로 메인 스토리와 다음 에피소드를 자동 진행합니다. 자동 전투를 활성화하지 않으며, 미수령 순오리지늄 보상이 명확히 인식된 일반·하드·역경 스테이지만 도전합니다. 전투를 자동 정산하는 특수 클라이언트가 필요합니다</system:String>
     <system:String x:Key="TaskQueue.Fight.PerformBattles">횟수 제한</system:String>
     <system:String x:Key="TaskQueue.Fight.PermanentStageBlocksStages">선택된 스테이지 ｢{0}｣ 는 상설 스테이지 또는 현재/마지막이므로 이후 스테이지는 선택되지 않습니다</system:String>
     <system:String x:Key="TaskQueue.Fight.Quantity">드롭 수</system:String>

@@ -26,6 +26,24 @@ public class AsstFightTask : AsstBaseTask
     public override AsstTaskType TaskType => AsstTaskType.Fight;
 
     /// <summary>
+    /// Gets or sets a value indicating whether 主线首通刷源石模式（不使用代理指挥）
+    /// </summary>
+    [JsonProperty("originium_mode")]
+    public bool OriginiumMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether 检查突袭或磨难的未领取源石
+    /// </summary>
+    [JsonProperty("originium_include_raid")]
+    public bool OriginiumIncludeRaid { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets 主线刷源石允许进入的最后章节
+    /// </summary>
+    [JsonProperty("originium_last_chapter")]
+    public int OriginiumLastChapter { get; set; } = 17;
+
+    /// <summary>
     /// Gets or sets 关卡id
     /// </summary>
     [JsonProperty("stage")]

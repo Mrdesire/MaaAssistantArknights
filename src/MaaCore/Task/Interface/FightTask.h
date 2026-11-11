@@ -12,6 +12,7 @@ class StageNavigationTask;
 class DrGrandetTaskPlugin;
 class SideStoryReopenTask;
 class MedicineCounterTaskPlugin;
+class OriginiumProgressTask;
 
 class FightTask final : public InterfaceTask
 {
@@ -32,5 +33,6 @@ protected:
     std::shared_ptr<StageDropsTaskPlugin> m_stage_drops_plugin_ptr = nullptr;
     std::shared_ptr<DrGrandetTaskPlugin> m_dr_grandet_task_plugin_ptr = nullptr;
     std::shared_ptr<SideStoryReopenTask> m_sidestory_reopen_task_ptr = nullptr;
+    std::shared_ptr<OriginiumProgressTask> m_originium_progress_task_ptr = nullptr;
 };
 }

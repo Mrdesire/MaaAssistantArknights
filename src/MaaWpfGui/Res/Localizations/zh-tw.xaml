@@ -2121,6 +2121,8 @@ DEBUG 目錄下儲存的圖片有數量限制，超出後會自動清理舊圖�
     <system:String x:Key="TaskQueue.Fight.InventoryUpdate.Tip">可透過 ｢{key=Toolbox.Title}-{key=Depot.Title}｣ 更新庫存數據</system:String>
     <system:String x:Key="TaskQueue.Fight.MedicineExpireDays.Tip">只吃遊戲內顯示不足 N 天的理智藥，顯示 ｢N 天｣ 及以上的不吃。</system:String>
     <system:String x:Key="TaskQueue.Fight.NoActivity">暫無活動</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode">主線首通刷源石（無代理）</system:String>
+    <system:String x:Key="TaskQueue.Fight.OriginiumMode.Tip">使用所選關卡作為起點，自動推進主線和後續章節；不啟用代理指揮，僅在明確辨識到未領取至純源石時挑戰普通、突襲或磨難關卡。需要特殊用戶端自動結算作戰</system:String>
     <system:String x:Key="TaskQueue.Fight.PerformBattles">指定次數</system:String>
     <system:String x:Key="TaskQueue.Fight.PermanentStageBlocksStages">目前選中的關卡 ｢{0}｣ 為常駐關卡或目前/上次，其後的關卡不會被選中執行</system:String>
     <system:String x:Key="TaskQueue.Fight.Quantity">刷取數量</system:String>

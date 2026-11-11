@@ -6,6 +6,7 @@
 #include "Task/Fight/DrGrandetTaskPlugin.h"
 #include "Task/Fight/FightTimesTaskPlugin.h"
 #include "Task/Fight/MedicineCounterTaskPlugin.h"
+#include "Task/Fight/OriginiumProgressTask.h"
 #include "Task/Fight/SideStoryReopenTask.h"
 #include "Task/Fight/StageDropsTaskPlugin.h"
 #include "Task/Fight/StageNavigationTask.h"
@@ -19,7 +20,8 @@ asst::FightTask::FightTask(const AsstCallback& callback, Assistant* inst) :
     m_start_up_task_ptr(std::make_shared<ProcessTask>(m_callback, m_inst, TaskType)),
     m_stage_navigation_task_ptr(std::make_shared<StageNavigationTask>(m_callback, m_inst, TaskType)),
     m_fight_task_ptr(std::make_shared<ProcessTask>(m_callback, m_inst, TaskType)),
-    m_sidestory_reopen_task_ptr(std::make_shared<SideStoryReopenTask>(m_callback, m_inst, TaskType))
+    m_sidestory_reopen_task_ptr(std::make_shared<SideStoryReopenTask>(m_callback, m_inst, TaskType)),
+    m_originium_progress_task_ptr(std::make_shared<OriginiumProgressTask>(m_callback, m_inst, TaskType))
 {
     LogTraceFunction;
 
@@ -40,6 +42,7 @@ asst::FightTask::FightTask(const AsstCallback& callback, Assistant* inst) :
     m_stage_navigation_task_ptr->set_fight_task_ptr(m_fight_task_ptr);
     m_stage_navigation_task_ptr->set_enable(false).set_retry_times(0);
     m_sidestory_reopen_task_ptr->set_enable(false).set_retry_times(0);
+    m_originium_progress_task_ptr->set_enable(false).set_retry_times(0);
 
     // 开始战斗任务
     m_fight_task_ptr->set_tasks({ "FightBegin" })
@@ -60,6 +63,7 @@ asst::FightTask::FightTask(const AsstCallback& callback, Assistant* inst) :
     m_subtasks.emplace_back(m_stage_navigation_task_ptr);
     m_subtasks.emplace_back(m_fight_task_ptr);
     m_subtasks.emplace_back(m_sidestory_reopen_task_ptr);
+    m_subtasks.emplace_back(m_originium_progress_task_ptr);
 }
 
 bool asst::FightTask::set_params(const json::value& params)
@@ -89,6 +93,30 @@ bool asst::FightTask::set_params(const json::value& params)
     const int stone = params.get("stone", 0);
     const int times = params.get("times", INT_MAX);
     const int series = params.get("series", 1);
+    const bool originium_mode = params.get("originium_mode", false);
+    const bool originium_include_raid = params.get("originium_include_raid", true);
+    const int originium_last_chapter = params.get("originium_last_chapter", 17);
+
+    if (originium_mode) {
+        const int max_normal_stages = times == INT_MAX ? 0 : times;
+        if (!m_originium_progress_task_ptr->set_params(
+                stage,
+                medicine,
+                medicine_expire_days,
+                stone,
+                max_normal_stages,
+                originium_include_raid,
+                originium_last_chapter)) {
+            return false;
+        }
+        m_start_up_task_ptr->set_enable(false);
+        m_stage_navigation_task_ptr->set_enable(false);
+        m_fight_task_ptr->set_enable(false);
+        m_sidestory_reopen_task_ptr->set_enable(false);
+        m_originium_progress_task_ptr->set_enable(times != 0);
+        return true;
+    }
+    m_originium_progress_task_ptr->set_enable(false);
 
     m_fight_times_prt->set_fight_times(times);
 

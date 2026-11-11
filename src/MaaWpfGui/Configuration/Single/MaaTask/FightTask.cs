@@ -30,6 +30,21 @@ public class FightTask : BaseTask, IJsonOnDeserialized
     public FightTask() => TaskType = TaskType.Fight;
 
     /// <summary>
+    /// Gets or sets a value indicating whether 主线首通刷源石（特殊客户端自动结算，不使用代理指挥）
+    /// </summary>
+    public bool OriginiumMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether 检查突袭或磨难的未领取源石
+    /// </summary>
+    public bool OriginiumIncludeRaid { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets 主线刷源石允许进入的最后章节
+    /// </summary>
+    public int OriginiumLastChapter { get; set; } = 17;
+
+    /// <summary>
     /// Gets or sets a value indicating whether 是否使用理智药
     /// </summary>
     public bool? UseMedicine { get; set; } = false;

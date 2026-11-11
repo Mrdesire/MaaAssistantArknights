@@ -1151,6 +1151,106 @@
             "Fight@OfflineConfirm"
         ]
     },
+    "OriginiumFightBegin": {
+        "doc": "主线首通刷源石入口；不检查或点击代理指挥",
+        "algorithm": "JustReturn",
+        "next": ["OriginiumStartButton1", "OriginiumStartStory", "OfflineConfirm"]
+    },
+    "OriginiumStartButton1": {
+        "baseTask": "StartButton1",
+        "next": [
+            "OriginiumStartButton2",
+            "OriginiumUseMedicine",
+            "OriginiumUseStone",
+            "OriginiumNoStone",
+            "OriginiumStartStory",
+            "OfflineConfirm",
+            "OriginiumStartButton1TryAgain"
+        ]
+    },
+    "OriginiumStartButton1TryAgain": {
+        "baseTask": "StartButton1TryAgain",
+        "next": [
+            "OriginiumStartButton2",
+            "OriginiumUseMedicine",
+            "OriginiumUseStone",
+            "OriginiumNoStone",
+            "OriginiumStartStory",
+            "OfflineConfirm"
+        ]
+    },
+    "OriginiumStartButton2": {
+        "baseTask": "StartButton2",
+        "template": ["StartButton2.png", "StartButton2Adverse.png"],
+        "next": []
+    },
+    "OriginiumStartStory": {
+        "doc": "纯剧情节点的蓝色开始剧情按钮",
+        "algorithm": "OcrDetect",
+        "action": "ClickSelf",
+        "text": ["开始剧情"],
+        "roi": [820, 180, 450, 460],
+        "postDelay": 1000,
+        "next": []
+    },
+    "OriginiumUseMedicine": {
+        "baseTask": "UseMedicine",
+        "template": "UseMedicine.png",
+        "next": ["OriginiumStartButton1", "OfflineConfirm", "OriginiumCloseStonePage"]
+    },
+    "OriginiumUseStone": {
+        "baseTask": "UseStone",
+        "template": "UseStone.png",
+        "next": ["OriginiumStoneConfirm"]
+    },
+    "OriginiumStoneConfirm": {
+        "doc": "碎石弹窗右下角是纯图标确认键；进入本任务前已经确认处于碎石页面",
+        "algorithm": "JustReturn",
+        "action": "ClickRect",
+        "specificRect": [1080, 560, 40, 40],
+        "postDelay": 500,
+        "exceededNext": ["OriginiumCloseStonePage"],
+        "next": ["OriginiumStartButton1", "OfflineConfirm", "OriginiumStoneConfirmWait@LoadingText"]
+    },
+    "OriginiumStoneConfirmWait": {
+        "baseTask": "StoneConfirmWait",
+        "template": "MedicineConfirm.png",
+        "exceededNext": ["OriginiumCloseStonePage"],
+        "next": ["OriginiumStoneConfirmWait", "OriginiumStoneConfirm#next"]
+    },
+    "OriginiumNoStone": {
+        "baseTask": "NoStone",
+        "template": "NoStone.png",
+        "next": ["OriginiumCloseStonePage"]
+    },
+    "OriginiumCloseStonePage": {
+        "baseTask": "CloseStonePage",
+        "exceededNext": [],
+        "next": []
+    },
+    "OriginiumMapStageOcr": {
+        "doc": "自动结算后确认已回到关卡地图；排除详情页右上角的单个关卡代号由 C++ 完成",
+        "algorithm": "OcrDetect",
+        "isAscii": true,
+        "text": [],
+        "roi": [25, 72, 1230, 520],
+        "ocrReplace": [
+            ["-\\]", "-1"],
+            [" ", ""],
+            ["s", "S"],
+            ["c", "C"],
+            ["o", "O"],
+            ["g", "8"],
+            ["t", "T"],
+            [":", ""],
+            ["'", ""],
+            ["(H\\d+)O(?=-)", "${1}0"],
+            ["(-\\d+)O", "${1}0"],
+            ["([A-Z])0(?=-)", "${1}O"],
+            [".*?([A-Z]{2}-EX-\\d+)", "$1"],
+            ["-I$", "-1"]
+        ]
+    },
     "LastOrCurBattleBegin": {
         "algorithm": "JustReturn",
         "next": [
